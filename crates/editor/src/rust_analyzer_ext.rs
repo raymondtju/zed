@@ -9,6 +9,7 @@ use project::lsp_store::{
     rust_analyzer_ext::RUST_ANALYZER_NAME,
 };
 use rpc::proto;
+use task::TaskTemplates;
 use text::ToPointUtf16;
 
 use crate::{
@@ -212,4 +213,53 @@ pub fn open_docs(editor: &mut Editor, _: &OpenDocs, window: &mut Window, cx: &mu
         })
     })
     .detach_and_log_err(cx);
+}
+
+pub fn lsp_runnables(
+    editor: &mut Editor,
+    window: &mut Window,
+    cx: &mut Context<Editor>,
+) -> Task<TaskTemplates> {
+    let Some(project) = &editor.project else {
+        return;
+    };
+    let Some(workspace) = editor.workspace() else {
+        return;
+    };
+
+    let buffers = editor
+        .buffer()
+        .read(cx)
+        .all_buffers()
+        .into_iter()
+        .filter_map(|buffer| {
+            let language = buffer.read(cx).language()?;
+            if is_rust_language(language) {
+                let server_id_task = project.update(cx, |project, cx| {
+                    project.language_server_id_for_name(buffer, language_server_name, cx)
+                });
+                return Some((buffer, server_id_task));
+            }
+            None
+        })
+        .collect::<Vec<_>>();
+    let a = cx.spawn(|editor, cx| async move {
+        if let Some((client, project_id)) = upstream_client {
+            todo!("TODO kb")
+        } else {
+            project
+                .update(cx, |project, cx| {
+                    project.request_lsp(
+                        buffer,
+                        project::LanguageServerToQuery::Other(server_to_query),
+                        project::lsp_store::lsp_ext_command::OpenDocs { position },
+                        cx,
+                    )
+                })?
+                .await
+                .context("lsp runnables")?
+        }
+    });
+
+    todo!("TODO kb")
 }

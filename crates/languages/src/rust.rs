@@ -8,6 +8,8 @@ use http_client::github::AssetKind;
 use http_client::github::{GitHubLspBinaryVersion, latest_github_release};
 pub use language::*;
 use lsp::{InitializeParams, LanguageServerBinary};
+use project::LspStore;
+use project::buffer_store::BufferStore;
 use project::lsp_store::rust_analyzer_ext;
 use regex::Regex;
 use serde_json::json;
@@ -799,17 +801,18 @@ impl ContextProvider for RustContextProvider {
         Some(TaskTemplates(task_templates))
     }
 
-    // TODO kb now call it
     fn lsp_tasks(
         &self,
         file: &dyn crate::File,
-        server: &lsp::LanguageServer,
+        lsp_store: &LspStore,
+        buffer_store: &BufferStore,
         cx: &App,
     ) -> Task<Result<Vec<()>>> {
         if server.name() != SERVER_NAME {
             return Task::ready(Ok(Vec::new()));
         }
         let url = file
+            // TODO kb make a proto request for remote clients, need buffer_id or something for that?
             .as_local()
             .map(|f| f.abs_path(cx))
             .and_then(|abs_path| {
