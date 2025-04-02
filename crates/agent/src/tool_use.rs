@@ -218,6 +218,19 @@ impl ToolUseState {
         }
     }
 
+    pub fn tool_confirmation_label(
+        &self,
+        tool_name: &str,
+        input: &serde_json::Value,
+        cx: &App,
+    ) -> SharedString {
+        if let Some(tool) = self.tools.tool(tool_name, cx) {
+            tool.confirmation_text(input).into()
+        } else {
+            format!("Unknown tool {tool_name:?}").into()
+        }
+    }
+
     pub fn tool_results_for_message(&self, message_id: MessageId) -> Vec<&LanguageModelToolResult> {
         let empty = Vec::new();
 
@@ -268,7 +281,7 @@ impl ToolUseState {
                 id: tool_use.id,
                 name: tool_use.name.clone(),
                 ui_text: self
-                    .tool_ui_label(&tool_use.name, &tool_use.input, cx)
+                    .tool_confirmation_label(&tool_use.name, &tool_use.input, cx)
                     .into(),
                 input: tool_use.input,
                 status: PendingToolUseStatus::Idle,

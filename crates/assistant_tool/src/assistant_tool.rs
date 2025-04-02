@@ -58,6 +58,11 @@ pub trait Tool: 'static + Send + Sync {
     /// Returns markdown to be displayed in the UI for this tool.
     fn ui_text(&self, input: &serde_json::Value) -> String;
 
+    /// Returns markdown to be displayed in the UI when this tool needs confirmation.
+    fn confirmation_text(&self, input: &serde_json::Value) -> String {
+        self.ui_text(input)
+    }
+
     /// Runs the tool with the provided input.
     fn run(
         self: Arc<Self>,
